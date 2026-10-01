@@ -2,6 +2,12 @@
 
 const { app, BrowserWindow, Menu, dialog, session, shell, screen } = require('electron');
 const path = require('path');
+
+const APP_NAME = 'Chess.com';
+app.setName(APP_NAME);
+// Keep profile/cache in a stable folder regardless of the display name.
+app.setPath('userData', path.join(app.getPath('appData'), 'ChessDesktop'));
+
 const state = require('./state');
 const importers = require('./importers');
 
@@ -141,6 +147,12 @@ function attachContextMenu(wc) {
   });
 }
 
+// Fixed window title instead of the page's SEO title.
+function lockTitle(w) {
+  w.setTitle(APP_NAME);
+  w.on('page-title-updated', (e) => e.preventDefault());
+}
+
 function wireNavigation(wc) {
   wc.setWindowOpenHandler(({ url }) => {
     if (inApp(url)) {
@@ -159,6 +171,7 @@ function wireNavigation(wc) {
     }
   });
   wc.on('did-create-window', (child) => {
+    lockTitle(child);
     attachContextMenu(child.webContents);
     wireNavigation(child.webContents);
   });
@@ -172,7 +185,7 @@ function createWindow() {
     minHeight: 420,
     backgroundColor: BG,
     show: false,
-    title: 'Chess',
+    title: APP_NAME,
     icon: process.platform === 'linux' ? ICON : undefined,
     autoHideMenuBar: process.platform !== 'darwin',
     webPreferences: {
@@ -189,6 +202,7 @@ function createWindow() {
   // Show the (theme-coloured) window immediately; the page paints into it.
   win.show();
 
+  lockTitle(win);
   const wc = win.webContents;
   wireNavigation(wc);
   attachContextMenu(wc);
@@ -312,7 +326,22 @@ function buildMenu() {
   const nav = (fn) => () => win && fn(win.webContents);
 
   const template = [
-    ...(isMac ? [{ role: 'appMenu' }] : []),
+    ...(isMac
+      ? [
+          {
+            label: APP_NAME,
+            submenu: [
+              { role: 'about', label: `A(z) ${APP_NAME} névjegye` },
+              { type: 'separator' },
+              { role: 'hide', label: `${APP_NAME} elrejtése` },
+              { role: 'hideOthers', label: 'A többi elrejtése' },
+              { role: 'unhide', label: 'Az összes megjelenítése' },
+              { type: 'separator' },
+              { role: 'quit', label: `Kilépés: ${APP_NAME}` }
+            ]
+          }
+        ]
+      : []),
     {
       label: 'Fiók',
       submenu: [
@@ -333,7 +362,18 @@ function buildMenu() {
         ...(isMac ? [] : [{ type: 'separator' }, { role: 'quit', label: 'Kilépés' }])
       ]
     },
-    { role: 'editMenu' },
+    {
+      label: 'Szerkesztés',
+      submenu: [
+        { role: 'undo', label: 'Visszavonás' },
+        { role: 'redo', label: 'Ismétlés' },
+        { type: 'separator' },
+        { role: 'cut', label: 'Kivágás' },
+        { role: 'copy', label: 'Másolás' },
+        { role: 'paste', label: 'Beillesztés' },
+        { role: 'selectAll', label: 'Az összes kijelölése' }
+      ]
+    },
     {
       label: 'Nézet',
       submenu: [
@@ -353,7 +393,14 @@ function buildMenu() {
         { role: 'toggleDevTools' }
       ]
     },
-    { role: 'windowMenu' }
+    {
+      label: 'Ablak',
+      submenu: [
+        { role: 'minimize', label: 'Kis méret' },
+        { role: 'zoom', label: 'Nagyítás' },
+        ...(isMac ? [{ type: 'separator' }, { role: 'front', label: 'Az összes előtérbe' }] : [{ role: 'close', label: 'Bezárás' }])
+      ]
+    }
   ];
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
@@ -371,7 +418,7 @@ if (!app.requestSingleInstanceLock()) {
   });
 
   app.whenReady().then(() => {
-    if (process.platform === 'darwin' && !app.isPackaged) app.dock.setIcon(ICON);
+    if (process.platform === 'darwin' && !app.isPackaged) app.dock.setIcon(path.join(__dirname, '..', 'build', 'icon-mac.png'));
     setupSession(chessSession());
     buildMenu();
     createWindow();
