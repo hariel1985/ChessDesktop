@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+<title>Nincs kapcsolat</title>
+<style>
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: #312e2b; color: #e8e6e3;
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Ubuntu, sans-serif;
+    display: flex; align-items: center; justify-content: center; text-align: center;
+  }
+  h1 { font-size: 20px; margin: 0 0 8px; }
+  p { color: #b4b1ad; margin: 0 0 20px; }
+  button {
+    background: #81b64c; color: #fff; border: 0; border-radius: 6px;
+    font: 600 15px/1 inherit; padding: 12px 22px; cursor: pointer;
+    box-shadow: 0 4px 0 #45753c;
+  }
+  button:hover { background: #a3d160; }
+</style>
+</head>
+<body>
+  <div>
+    <h1>Nem érhető el a chess.com</h1>
+    <p id="msg">Ellenőrizd az internetkapcsolatot.</p>
+    <button id="retry">Újrapróbálás</button>
+  </div>
+<script>
+  const target = new URLSearchParams(location.search).get('url') || 'https://www.chess.com/';
+  const go = () => { location.href = target; };
+  document.getElementById('retry').addEventListener('click', go);
+  window.addEventListener('online', go);
+</script>
+</body>
+</html>
