@@ -1,4 +1,4 @@
-# ChessDesktop
+# Chess.com Desktop (unofficial)
 
 Unofficial desktop app for [Chess.com](https://www.chess.com) built with Electron, for **macOS**, **Windows** and **Debian/Ubuntu Linux**.
 
@@ -33,7 +33,7 @@ npm run dist:win     # NSIS installer (x64, arm64)
 npm run dist:linux   # .deb (x64, arm64) + AppImage
 ```
 
-Pushing a `v*` tag triggers GitHub Actions, which builds for all three platforms and attaches the packages to a GitHub Release.
+Build each platform's package on that platform (Windows packages on Windows, `.deb` on Linux).
 
 Regenerate the icons (from `build/favicon.svg`): `npm run icons`
 
