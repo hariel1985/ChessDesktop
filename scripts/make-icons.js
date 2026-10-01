@@ -35,7 +35,7 @@ async function renderMac() {
       `<rect x="100" y="100" width="824" height="824" rx="185" ry="185" fill="#312e2b"/></svg>`
   );
   const pawn = await sharp(svg, { density: 1200 })
-    .resize(680, 680, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+    .resize(560, 560, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
     .png()
     .toBuffer();
   return sharp(plate).composite([{ input: pawn, gravity: 'center' }]).png().toBuffer();
