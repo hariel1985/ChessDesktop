@@ -33,6 +33,16 @@ npm run dist:win     # NSIS installer (x64, arm64)
 npm run dist:linux   # .deb (x64, arm64) + AppImage
 ```
 
+### Signed & notarized macOS build
+
+```bash
+CSC_NAME="<Developer ID Application identity, without the prefix>" \
+APPLE_KEYCHAIN_PROFILE=<notarytool keychain profile> \
+npx electron-builder --mac dmg --arm64 --x64
+```
+
+electron-builder signs the app (hardened runtime, Electron helper entitlements), then notarizes and staples it. After that, sign each DMG with `codesign --timestamp` and run `notarytool submit --wait` and `stapler staple` on it.
+
 Build each platform's package on that platform (Windows packages on Windows, `.deb` on Linux).
 
 Regenerate the icons (from `build/favicon.svg`): `npm run icons`
