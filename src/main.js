@@ -1,6 +1,6 @@
 'use strict';
 
-const { app, BrowserWindow, Menu, dialog, session, shell, screen } = require('electron');
+const { app, BrowserWindow, Menu, dialog, session, shell, screen, net } = require('electron');
 const path = require('path');
 
 const APP_NAME = 'Chess.com';
@@ -32,6 +32,10 @@ const IN_APP_HOSTS = [
 // served from disk on later launches. V8 code cache is on by default for the
 // persistent partition, so parsed JS is reused as well.
 app.commandLine.appendSwitch('disk-cache-size', String(1024 * 1024 * 1024));
+// HTTP/3 (QUIC, UDP) sessions to chess.com tend to stall silently after sleep
+// or a network change, leaving the page stuck on skeleton loaders until they
+// time out. HTTP/2 over TCP recovers immediately.
+app.commandLine.appendSwitch('disable-quic');
 // Keep clocks and premoves accurate while the window is in the background.
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
 app.commandLine.appendSwitch('disable-background-timer-throttling');
@@ -177,7 +181,21 @@ function wireNavigation(wc) {
   });
 }
 
+// Reopen the last page, except game pages: yesterday's finished game is not
+// a useful place to start.
+function startUrl() {
+  const last = state.get('lastUrl');
+  if (!last || !isChessUrl(last)) return HOME_URL;
+  try {
+    if (/\/(live\/)?game\/|\/play\/online\/new|\/game\/daily\//i.test(new URL(last).pathname)) return HOME_URL;
+  } catch {
+    return HOME_URL;
+  }
+  return last;
+}
+
 function createWindow() {
+  const offline = path.join(__dirname, 'offline.html');
   const bounds = restoredBounds();
   win = new BrowserWindow({
     ...bounds,
@@ -210,7 +228,7 @@ function createWindow() {
   wc.on('did-fail-load', (_e, code, _desc, url, isMainFrame) => {
     // -3 = ERR_ABORTED (normal when a navigation is superseded)
     if (!isMainFrame || code === -3 || !isChessUrl(url)) return;
-    win.loadFile(path.join(__dirname, 'offline.html'), { query: { url } });
+    win.loadFile(offline, { query: { url } });
   });
 
   wc.on('did-navigate', (_e, url) => {
@@ -246,8 +264,11 @@ function createWindow() {
     win = null;
   });
 
-  const last = state.get('lastUrl');
-  win.loadURL(last && isChessUrl(last) ? last : HOME_URL);
+  const target = startUrl();
+  // Right after wake/login the network may not be up yet: wait on the offline
+  // page (it reloads by itself on the 'online' event) instead of half-loading.
+  if (net.isOnline()) win.loadURL(target);
+  else win.loadFile(offline, { query: { url: target } });
 }
 
 // --- Login import --------------------------------------------------------------
