@@ -181,17 +181,10 @@ function wireNavigation(wc) {
   });
 }
 
-// Reopen the last page, except game pages: yesterday's finished game is not
-// a useful place to start.
+// Reopen the last page (including the last game).
 function startUrl() {
   const last = state.get('lastUrl');
-  if (!last || !isChessUrl(last)) return HOME_URL;
-  try {
-    if (/\/(live\/)?game\/|\/play\/online\/new|\/game\/daily\//i.test(new URL(last).pathname)) return HOME_URL;
-  } catch {
-    return HOME_URL;
-  }
-  return last;
+  return last && isChessUrl(last) ? last : HOME_URL;
 }
 
 function createWindow() {
